@@ -21,6 +21,7 @@ class IMU(object):
             m9a, m9g, m9m = self.imu.getMotion9()
             await asyncio.sleep(0.1)
             self.cached = (m9a,m9g,m9m)
+            print("reading")
 
     def read(self):
         '''

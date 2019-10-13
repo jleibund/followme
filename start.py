@@ -21,6 +21,6 @@ async def main():
 
 #asyncio.run(main())
 try:
-    loop.run_until_complete(camera.start())
+    loop.run_until_complete(imu.start())
 finally:
     loop.close()

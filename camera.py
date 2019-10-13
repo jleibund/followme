@@ -20,7 +20,6 @@ class PiVideoStream(object):
             fisheye=config.camera.fisheye,
             **kwargs):
 
-        super(PiVideoStream, self).__init__(resolution, **kwargs)
         self.resolution = resolution
         self.frame = np.zeros(
                 shape=(
