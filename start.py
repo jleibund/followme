@@ -17,19 +17,23 @@ def start_loop(loop,task):
 def start_thread(task):
     loop = asyncio.new_event_loop()
     thread = Thread(target=start_loop,args=(loop,task))
-    thread.start
+    thread.start()
     return thread
 
 async def main():
     print('start sensors')
     start_thread(imu)
     start_thread(sonar)
-    #loop.create_task(camera.start())
+    loop.create_task(camera.start())
     #loop.create_task(sonar.start())
     #asyncio.create_task(sensor.start())
     # loop.create_task(sonar.start())
     print('started... waiting 10 seconds')
     await asyncio.sleep(10)
+    imu.stop()
+    sonar.stop()
+    camera.stop()
+    await asyncio.sleep(1)
     print('stop')
     # print('reading %s'%sonar.read())
     # await asyncio.sleep(1)

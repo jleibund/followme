@@ -13,6 +13,7 @@ class IMU(object):
         self.stopped = False
 
     async def start(self):
+        print('here')
         util.check_apm()
         self.imu = mpu9250.MPU9250()
         try:
