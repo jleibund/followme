@@ -23,14 +23,19 @@ class StereoSonar(object):
         self.stopped = False
 
     async def start(self):
+        logging.info("Start StereoSonar")
         util.check_apm()
+        logging.info("APM checked")
         self.adc = adc.ADC()
-        await asyncio.gather(__setup_pin(TRIGGER_LEFT),__setup_pin(TRIGGER_RIGHT))
+        logging.info("Created ADC")
+        await asyncio.gather(self.__setup_pin(TRIGGER_LEFT),self.__setup_pin(TRIGGER_RIGHT))
+        logging.info("Setup Sonar Pins")
         await asyncio.sleep(2)
         while not self.stopped:
-            left_volts = await __read_pin(self.adc,TRIGGER_LEFT,CHANNEL_LEFT)
-            right_volts = await __read_pin(self.adc,TRIGGER_RIGHT,CHANNEL_RIGHT)
+            left_volts = await self.__read_pin(TRIGGER_LEFT,CHANNEL_LEFT)
+            right_volts = await self.__read_pin(TRIGGER_RIGHT,CHANNEL_RIGHT)
             self.cached = (left_volts,right_volts)
+            print("Read sonar: %s, %s"%(left_volts,right_volts))
 
     def read(self):
         '''
@@ -50,17 +55,15 @@ class StereoSonar(object):
                 await f.write(spin)
         except:
             pass
-
         try:
             async with aiofiles.open('/sys/class/gpio/export','w') as f:
                 await f.write(spin)
         except:
             pass
         await asyncio.sleep(0.1)
-
         async with aiofiles.open('/sys/class/gpio/gpio%s/direction'%pin,'w') as f:
             await f.write('out')
-        __set_pin(pin,False)
+        await self.__set_pin(pin,False)
 
     async def __set_pin(self,pin,on):
         value = '1' if on else '0'
@@ -68,10 +71,10 @@ class StereoSonar(object):
             await f.write(value)
 
     async def __read_pin(self,pin,channel):
-        await asyncio.sleep(0.05)
-        await __set_pin(pin,False)
+        await asyncio.sleep(0.04)
+        await self.__set_pin(pin,False)
         await asyncio.sleep(0.01)
-        await __set_pin(pin,True)
+        await self.__set_pin(pin,True)
         await asyncio.sleep(0.01)
         value=0
         for i in range (0,READINGS):
@@ -80,8 +83,8 @@ class StereoSonar(object):
             await asyncio.sleep(0.001)
         reading = value / READINGS
         await asyncio.sleep(0.01)
-        await __set_pin(pin,False)
-        await asyncio.sleep(0.05)
+        await self.__set_pin(pin,False)
+        await asyncio.sleep(0.04)
         return int(reading)
 
     @staticmethod
