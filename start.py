@@ -2,18 +2,30 @@ import asyncio
 from sonar import StereoSonar
 from camera import PiVideoStream
 from imu import IMU
+from threading import Thread
 
 loop = asyncio.get_event_loop()
 sonar = StereoSonar()
 camera = PiVideoStream()
 imu = IMU()
 
+def start_loop(loop,task):
+    asyncio.set_event_loop(loop)
+    loop.create_task(task.start())
+    loop.run_forever()
+
+def start_thread(task):
+    loop = asyncio.new_event_loop()
+    thread = Thread(target=start_loop,args=(loop,task))
+    thread.start
+    return thread
 
 async def main():
     print('start sensors')
-    loop.create_task(imu.start())
-    loop.create_task(camera.start())
-    loop.create_task(sonar.start())
+    start_thread(imu)
+    start_thread(sonar)
+    #loop.create_task(camera.start())
+    #loop.create_task(sonar.start())
     #asyncio.create_task(sensor.start())
     # loop.create_task(sonar.start())
     print('started... waiting 10 seconds')
