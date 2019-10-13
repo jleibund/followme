@@ -11,8 +11,7 @@ imu = IMU()
 
 def start_loop(loop,task):
     asyncio.set_event_loop(loop)
-    loop.create_task(task.start())
-    loop.run_forever()
+    loop.run_until_complete(task.start())
 
 def start_thread(task):
     loop = asyncio.new_event_loop()
