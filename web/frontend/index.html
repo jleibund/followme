@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RC Telemetry</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+    <div id="veilContainer"></div>
+    <div id="container">
+      <div id="primaryContainer">
+        <div id="imageContainer" class="subcontainer"></div>
+        <div id="sliderContainer" class="subcontainer"></div>
+      </div>
+      <div id="secondaryContainer">
+        <div id="pilotsRowContainer" class="row">
+          <label class="rowTitle">Auto Pilot</label>
+          <div id="pilotsContainer"></div>
+        </div>
+        <div id="throttleBoxRowContainer" class="row">
+        <label class="rowTitle">Auto Throttle</label>
+          <label class="leftLabel">Auto-Throttle</label>
+          <div id="throttleBox" class="rightBox"></div>
+        </div>
+        <div id="recordBoxRowContainer" class="row">
+        <label class="rowTitle">Options</label>
+          <label class="leftLabel">Record Images</label>
+          <div id="recordBox" class="rightBox"></div>
+        </div>
+        <div id="throttleRowContainer" class="row">
+          <label class="rowTitle">Guages</label>
+          <label class="leftLabel">Throttle</label>
+          <div id="throttleValue" class="rightValue"></div>
+        </div>
+        <div id="sensorLeftRowContainer" class="row">
+          <label class="leftLabel">Sonar Left</label>
+          <div id="sonarLeft" class="rightValue"></div>
+        </div>
+        <div id="sensorRightRowContainer" class="row">
+          <label class="leftLabel">Sonar Right</label>
+          <div id="sonarRight" class="rightValue"></div>
+        </div>
+        <div id="accelerometerRowContainer" class="row">
+          <label class="leftLabel">Accel</label>
+          <div id="accelerometer" class="rightValue"></div>
+        </div>
+        <div id="gyroscopeRowContainer" class="row">
+          <label class="leftLabel">Gyro</label>
+          <div id="gyroscope" class="rightValue"></div>
+        </div>
+        <div id="magnetometerRowContainer" class="row">
+          <label class="leftLabel">Mag</label>
+          <div id="magnetometer" class="rightValue"></div>
+        </div>
+        <div id="ftimeRowContainer" class="row">
+          <label class="leftLabel">Frame Time</label>
+          <div id="ftimeValue" class="rightValue"></div>
+        </div>
+        <div id="fpsContainer" class="row">
+          <label class="leftLabel">FPS</label>
+          <div id="fps" class="rightValue"></div>
+        </div>
+        <div id="connectionLEDContainer" class="red"></div>
+      </div>
+    </div>
+    <script src="/static/js/mithril.min.js"></script>
+    <script src="/static/js/draggabilly.pkgd.min.js"></script>
+    <script src="/static/js/classnames.js"></script>
+    <script src="/static/script.js"></script>
+  </body>
+</html>

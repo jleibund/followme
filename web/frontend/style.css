@@ -1,0 +1,264 @@
+html, body {
+	height: 100%;
+    width: 100%;
+}
+
+body {
+	background-image: linear-gradient(25deg, #323896 0%, #0C8ED5 100%);
+    background-size: cover;
+    background-attachment: fixed;
+	font-family: Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+div#connectionLEDContainer {
+	position: absolute;
+	left: 12px;
+	bottom: 12px;
+	width: 150px;
+	height: 15px;
+}
+
+span#connectionLED {
+	display: inline-block;
+	width: 15px;
+	height: 15px;
+	border-radius: 8px;
+}
+
+span#connectionLED.green {
+	background: #2d7;
+}
+
+span#connectionLED.red {
+	background: red;
+}
+
+span#connectionCaption {
+	margin-left: 6px;
+	color: #888;
+	position: relative;
+	top: -1px;
+}
+
+div.veil {
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	background: #fff;
+	background-image: url(loading.gif);
+	background-repeat: no-repeat;
+	background-position: center;
+	opacity: 0.6;
+	z-index: 999;
+}
+
+#container {
+	margin: 0 0 0 300px;
+	height: 100%;
+}
+
+#primaryContainer {
+	max-width: 800px;
+	cursor:move;
+	position:relative; /* important for dragging */
+	left: 20px;
+	top: 20px;
+	background: #fff;
+	box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.13);
+    -moz-box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.13);
+    -webkit-box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.13);
+}
+
+#imageContainer {
+	padding: 10px;
+}
+
+#secondaryContainer {
+	position: fixed;
+	left: 0px;
+	top: 0px;
+	height: 100%;
+	width: 300px;
+	background: #fff;
+	box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.13);
+    -moz-box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.13);
+    -webkit-box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.13);
+}
+
+img.viewport {
+	display: block;
+	width: 100%;
+	height: auto;
+	vertical-align: center;
+}
+
+#sliderContainer {
+	height: 60px;
+}
+
+.sliderBox {
+	width: 100%;
+	height: 60px;
+	background: #4af;
+}
+
+.sliderBox.record_enable {
+	background: #2c7;
+}
+
+.sliderBox.record_enable.recording {
+	background: #e64;
+}
+
+.sliderKnob {
+	position: relative;
+	width: 2px;
+	height: 44px;
+	top: 8px;
+	background: #fff;
+}
+
+select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	color: #777;
+	/* remove default arrow */
+	background-image: url(down-arrow.png);
+	background-repeat: no-repeat;
+	background-position: right 24px center;
+	background-size: 20px 20px;
+	background-color: hsla(0,0%,100%,0.60);
+    background-blend-mode: overlay;
+	/* add custom arrow */
+	width: 100%;
+	padding: 18px;
+	border: none;
+	font-size: 16px;
+}
+
+.row {
+	background: #fff;
+	overflow: auto;
+	border-bottom: 1px solid #eee;
+}
+
+label.rowTitle {
+	float: none;
+	clear: both;
+	display: block;
+	margin: 12px;
+	font-size: 13px;
+	font-weight: bold;
+}
+
+label.rowTitle + .leftLabel, 
+label.rowTitle + .rightValue {
+	margin-top: 10px;
+}
+
+.rightBox {
+	float: right;
+}
+
+.rightValue {
+	float: right;
+	margin: 21px;
+	margin-right: 26px;
+	color: #555;
+}
+
+.leftLabel {
+	display: block;
+	float: left;
+	margin: 21px;
+	color: #777;
+}
+
+/* Checkbox */
+
+input[type=checkbox] {
+  	transform: scale(1.0);
+}
+
+input[type=checkbox] {
+	position: relative;
+	top: 8px;
+	float: right;
+	width: 13px;
+	height: 13px;
+	margin-right: 30px;
+	cursor: pointer;
+	font-size: 17px;
+    visibility: hidden;
+}
+
+input[type=checkbox]:after {
+    content: " ";
+    background-color: #fff;
+    display: inline-block;
+    padding-bottom: 5px;
+    color: #aaa;
+    width: 13px;
+    height: 13px;
+    visibility: visible;
+    border:1px solid #aaa;
+    padding-left: 3px;
+    border-radius: 3px;
+}
+
+input[type=checkbox]:checked:after {
+    content: "\2714";
+    padding: -5px;
+    font-weight: bold;
+    background-color: #46f;
+    border: 1px solid #46f;
+    color: #fff;
+}
+
+/* Media Queries */
+
+@media (max-width: 1080px) {
+}
+
+@media (max-width: 920px) {
+
+	#container {
+		margin: 0 auto;
+		width: 100%;
+		max-width: 640px;
+	}
+
+	#primaryContainer {
+		cursor: auto;
+		position: static;
+		top: 0;
+		left: 0;
+	}
+
+	#imageContainer {
+		padding: 0;
+	}
+
+  	#secondaryContainer {
+	    position: static;
+		left: auto;
+		top: auto;
+		height: auto;
+		width: auto;
+  	}
+
+  	div#connectionLEDContainer {
+		position: relative;
+		left: 0;
+		bottom: 0;
+		margin: 20px;
+		height: 30px;
+	}
+}
