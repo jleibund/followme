@@ -1,2 +1,3 @@
 aiofiles
 configobj
+cv2
