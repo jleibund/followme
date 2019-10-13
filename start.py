@@ -8,19 +8,23 @@ sonar = StereoSonar()
 camera = PiVideoStream()
 imu = IMU()
 
+
 async def main():
-    print('hello')
-    await asyncio.sleep(1)
-    print('world')
-    #asyncio.create_task(sensor.start())
+    print('start sensors')
+    loop.create_task(imu.start())
+    loop.create_task(camera.start())
     loop.create_task(sonar.start())
-    await asyncio.sleep(1)
-    print('reading %s'%sonar.read())
-    await asyncio.sleep(1)
-    print('reading %s'%sonar.read())
+    #asyncio.create_task(sensor.start())
+    # loop.create_task(sonar.start())
+    print('started... waiting 10 seconds')
+    await asyncio.sleep(10)
+    print('stop')
+    # print('reading %s'%sonar.read())
+    # await asyncio.sleep(1)
+    # print('reading %s'%sonar.read())
 
 #asyncio.run(main())
 try:
-    loop.run_until_complete(imu.start())
+    loop.run_until_complete(main())
 finally:
     loop.close()

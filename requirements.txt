@@ -1,3 +1,6 @@
 aiofiles
 configobj
 cv2
+spidev
+smbus
+imutils

@@ -26,7 +26,11 @@ class StereoSonar(object):
         logging.info("Start StereoSonar")
         util.check_apm()
         logging.info("APM checked")
-        self.adc = adc.ADC()
+        try:
+            self.adc = adc.ADC()
+        except:
+            logging.error("Could not load ADC, no sonar available")
+            return
         logging.info("Created ADC")
         await asyncio.gather(self.__setup_pin(TRIGGER_LEFT),self.__setup_pin(TRIGGER_RIGHT))
         logging.info("Setup Sonar Pins")

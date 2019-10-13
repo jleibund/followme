@@ -15,7 +15,11 @@ class IMU(object):
     async def start(self):
         util.check_apm()
         self.imu = mpu9250.MPU9250()
-        self.imu.initialize()
+        try:
+            self.imu.initialize()
+        except:
+            logging.error("Could not initialize IMU")
+            return
         await asyncio.sleep(2)
         while not self.stopped:
             m9a, m9g, m9m = self.imu.getMotion9()
