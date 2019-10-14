@@ -1,0 +1,12 @@
+aiofiles
+configobj
+cv2
+smbus
+imutils
+tornado
+cython
+spidev==3.0
+numpy
+scikit-learn
+docopt
+pyusb
