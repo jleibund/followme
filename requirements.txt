@@ -4,3 +4,5 @@ cv2
 spidev
 smbus
 imutils
+tornado
+cython

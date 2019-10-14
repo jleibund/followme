@@ -1,3 +1,11 @@
+'''
+
+camera.py
+
+PiCamera sensor implementation.
+
+'''
+
 import io
 import os
 import time
@@ -10,14 +18,16 @@ import cv2
 import asyncio
 from PIL import Image
 from config import config
+from .sensor import BaseSensor
 
-class PiVideoStream(object):
+class PiVideoStream(BaseSensor):
 
     def __init__(self, resolution=config.camera.resolution,
             framerate=config.camera.framerate,
             rotation=config.camera.rotation,
             vflip=config.camera.vflip,
             **kwargs):
+        super(PiVideoStream, self).__init__(**kwargs)
 
         self.resolution = resolution
         self.frame = np.zeros(

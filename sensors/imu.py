@@ -1,3 +1,11 @@
+'''
+
+imu.py
+
+IMU sensor implementation NAVIO2.
+
+'''
+
 import sys
 import asyncio
 import logging
@@ -5,8 +13,9 @@ import os
 from navio2 import mpu9250
 from navio2 import util
 from config import config
+from .sensor import BaseSensor
 
-class IMU(object):
+class IMU(BaseSensor):
     def __init__(self, **kwargs):
         super(IMU, self).__init__(**kwargs)
         self.cached = ([0,0,0],[0,0,0],[0,0,0])

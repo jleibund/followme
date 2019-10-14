@@ -1,3 +1,11 @@
+'''
+
+sonar.py
+
+StereoSonar implementation NAVIO2.
+
+'''
+
 import asyncio
 import sys
 import logging
@@ -6,10 +14,14 @@ import aiofiles
 from config import config
 from navio2 import util
 from navio2 import adc
+from .sensor import BaseSensor
 
-class StereoSonar(object):
-    mVcm=4.883
-    cmToFt=0.0328084
+mVcm=4.883
+cmToFt=0.0328084
+def volts_to_distance(mV):
+    return (mV/mVcm)*cmToFt
+
+class StereoSonar(BaseSensor):
 
     def __init__(self, readings=config.sonar.readings,
                         trigger_left=config.sonar.trigger_left,
@@ -94,7 +106,3 @@ class StereoSonar(object):
         await self.__set_pin(pin,False)
         await asyncio.sleep(0.04)
         return int(reading)
-
-    @staticmethod
-    def volts_to_distance(mV):
-        return (mV/mVcm)*cmToFt
