@@ -17,7 +17,6 @@ class PiVideoStream(object):
             framerate=config.camera.framerate,
             rotation=config.camera.rotation,
             vflip=config.camera.vflip,
-            fisheye=config.camera.fisheye,
             **kwargs):
 
         self.resolution = resolution
@@ -38,7 +37,6 @@ class PiVideoStream(object):
         self.rotation = rotation
         self.vflip = vflip
         self.exposure_mode = "sports"
-        self.new_K=None
         self.balance=0.0
         self.frame = None
         self.stopped = False
@@ -53,7 +51,7 @@ class PiVideoStream(object):
                 camera.rotation = self.rotation
                 camera.vflip = self.vflip
                 camera.hflip = self.vflip
-                camera.exposure_mode = "sports"
+                camera.exposure_mode = self.exposure_mode
                 rawCapture = PiRGBArray(camera, size=self.resolution)
 
                 logging.info("PiVideoStream loaded.. .warming camera")

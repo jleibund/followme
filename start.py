@@ -1,7 +1,7 @@
 import asyncio
-from sonar import StereoSonar
-from camera import PiVideoStream
-from imu import IMU
+from sensors import StereoSonar
+from sensors import PiVideoStream
+from sensors import IMU
 from threading import Thread
 
 loop = asyncio.get_event_loop()

@@ -13,7 +13,6 @@ class IMU(object):
         self.stopped = False
 
     async def start(self):
-        print('here')
         util.check_apm()
         self.imu = mpu9250.MPU9250()
         try:
@@ -26,7 +25,6 @@ class IMU(object):
             m9a, m9g, m9m = self.imu.getMotion9()
             await asyncio.sleep(0.1)
             self.cached = (m9a,m9g,m9m)
-            print("reading")
 
     def read(self):
         '''
