@@ -1,0 +1,13 @@
+[Unit]
+Description=FollowMe
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+ExecStartPre=/bin/bash --login -c 'env > /tmp/.magic-environment-file'
+ExecStart=/home/pi/followme/service.sh
+EnvironmentFile=-/tmp/.magic-environment-file
+
+[Install]
+WantedBy=multi-user.target
