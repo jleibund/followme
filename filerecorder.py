@@ -15,6 +15,8 @@ class FileRecorder(object):
     '''
 
     def __init__(self, rover):
+        self.frame_count = 0
+        self.is_recording = False
         self.rover = rover
         self.instance_path = self.make_instance_dir(
             config.recording.session_dir)

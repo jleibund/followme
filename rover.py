@@ -12,6 +12,7 @@ from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
 from methods import min_abs
+from threading import Thread
 
 def start_loop(loop,task):
     if task is None:
@@ -24,6 +25,7 @@ def start_thread(task):
         return
     loop = asyncio.new_event_loop()
     thread = Thread(target=start_loop,args=(loop,task))
+    thread.daemon = True
     thread.start()
     return thread
 
@@ -39,12 +41,13 @@ class Rover(object):
         self.manual_pilots = manual_pilots
 
         auto_pilots = []
-        self.mobilenet = MobileNet(rover,"/home/pi/byob/byob/detect_edgetpu.tflite")
+        self.mobilenet = MobileNet(self)
         auto_pilots.append(self.mobilenet)
         self.auto_pilots = auto_pilots
 
-        self.remove = WebRemote()
+        self.remote = WebRemote(self)
         self.recorder = FileRecorder(self)
+        
         self.auto_pilot_index = -1
         self.f_time = 0.
         self.pilot_yaw = 0.
@@ -74,13 +77,12 @@ class Rover(object):
 
     async def run(self):
         self.set_indicator('warmup')
-        await asyncio.sleep(0.5)
         start_thread(self.imu_sensor)
         start_thread(self.sonar_sensor)
         start_thread(self.vision_sensor)
         start_thread(self.mobilenet)
-        await asyncio.sleep(0.5)
         self.remote.start()
+        await asyncio.sleep(0.5)
         self.set_indicator('ready')
         await asyncio.sleep(0.5)
         counter = 0
@@ -200,7 +202,7 @@ class Rover(object):
         if self.mixer:
             self.mixer.update(self.pilot_throttle, self.pilot_angle)
 
-        if self.record:
+        if self.record and self.recorder is not None:
             self.recorder.record_frame()
 
         if self.recorder and self.recorder.is_recording:
