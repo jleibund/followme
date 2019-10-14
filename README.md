@@ -1,5 +1,5 @@
 # Autonomous "Follow-Me" Rover
-![Tekno EB410 "Follow-Me" Rover](https://github.com/jleibund/followme/blob/master/rover_side.jpg)
+![Tekno EB410 "Follow-Me" Rover](https://github.com/jleibund/followme/blob/dev/rover_side.jpg?raw=true)
 
 - Tekno EB410 Rover
 - Google Coral EdgeTPU
@@ -16,4 +16,3 @@
 - TBR Bastion Front Bumper - Tekno RC EB410
 - Radiolink T8FB Transmitter (SBUS)
 - 3MM Plexiglass Sheet / Cutter
-
