@@ -89,7 +89,7 @@ class MobileNet(BasePilot):
         while not self.stopped:
             # do not run when not "on"
             if not self.selected:
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.1)
                 continue
 
             start_time = time.time()
@@ -104,7 +104,7 @@ class MobileNet(BasePilot):
             except Exception as e:
                 pass
 
-            # only continue if current frame time is greaer than cam frame time
+            # only continue if current cam frame time is greater than mobilnet last frame time
             if image is not None and frame_time > self.frame_time:
 
                 # get width/height if first time around loop
@@ -121,7 +121,9 @@ class MobileNet(BasePilot):
 
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
+                s1 = time.time()
                 self.model.invoke()
+                t1 = int((time.time()-s1)*1000)
 
                 # get the response arrays
                 locs = self.model.get_tensor(self.output_details[0]['index'])[0]
@@ -144,8 +146,10 @@ class MobileNet(BasePilot):
                         dets.append([x1,y1,x2,y2,score])
 
                 # run candidates through the tracker
+                s2 = time.time()
                 trackers = mot_tracker.update(np.array(dets))
-
+                t2 = int((time.time()-s2)*1000)
+                
                 # we will try to find our existing target or if not there, reset and pick the largest/closest person in frame
                 largest = None
                 found = None
@@ -193,15 +197,17 @@ class MobileNet(BasePilot):
                     # if larger than max height, apply the brake
                     if found_height > max_height:
                         throttle = -1.0
-                        logging.info('Mobilenet: cutoff found_height %.1f %sms'%(found_height,int(self.f_time*1000)))
+                        logging.info('Mobilenet: cutoff found_height %.1f %sms'%(found_height,int((time.time()-start_time)*1000)))
                     else:
                         # otherwise update PID and convert PID output to throttle proportion
+                        s3 = time.time()
                         self.pid.update(found_height)
+                        t3 = int((time.time()-s3)*1000)
                         throttle = self.pid.output/target_height
 
                         # average throttle using factor for smooth acceleration /  decelleration
                         throttle = avf_t * self.throttle + (1.0 - avf_t) * throttle
-                        logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms'%(yaw,throttle,found_height,int(self.f_time*1000)))
+                        logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms [t1: %sms, t2: %sms, t3: %sms]'%(yaw,throttle,found_height,int((time.time()-start_time)*1000),t1,t2,t3))
 
                     # save detection on the rover
                     self.target = found
@@ -225,8 +231,7 @@ class MobileNet(BasePilot):
                 self.frame_time = stop_time
                 self.f_time = stop_time - start_time
                 self.fps = 1/self.f_time
-            else:
-                await asyncio.sleep(0.001)
+            await asyncio.sleep(0.001)
 
     def stop(self):
         self.stopped = True

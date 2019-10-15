@@ -96,12 +96,11 @@ class Rover(object):
         start_thread(self.vision_sensor)
         start_thread(self.mobilenet)
         self.remote.start()
-
         # wait and read sensors
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
         self.sensor_reading = self.read_sensors()
         self.set_indicator('ready')
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
         counter = 0
 
         # enter run loop
@@ -114,6 +113,7 @@ class Rover(object):
             await asyncio.sleep(max(0.002, 0.05 - self.f_time))
             counter = counter + 1
 
+
     async def step(self):
         # gather angle, throttle
         final_angle = 0.
@@ -121,10 +121,10 @@ class Rover(object):
 
         # read sensors in format used by web remote and extract sonar values
         self.sensor_reading = self.read_sensors()
-        sonar_left = self.sensor_reading['sensor_left']
-        sonar_right = self.sensor_reading['sensor_right']
-        sonar_left_ft =  = self.sensor_reading['sensor_left_ft']
-        sonar_right_ft =  = self.sensor_reading['sensor_right_ft']
+        sonar_left = self.sensor_reading['sonar_left']
+        sonar_right = self.sensor_reading['sonar_right']
+        sonar_left_ft = self.sensor_reading['sonar_left_ft']
+        sonar_right_ft = self.sensor_reading['sonar_right_ft']
 
         # run the manual pilots, if any
         for pilot in self.manual_pilots:

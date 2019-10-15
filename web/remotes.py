@@ -6,7 +6,8 @@ from time import sleep
 import os.path
 import cv2
 import base64
-from tornado import httpserver, ioloop, web, websocket, options, escape
+import asyncio
+from tornado import httpserver, web, websocket, options, escape
 from tornado.options import define, options
 
 import methods
@@ -70,7 +71,7 @@ class SocketHandler(websocket.WebSocketHandler):
         img64 = None
         if v.frame_buffer is not None:
             image = v.frame_buffer
-            if v.detection is not None:
+            if v.target is not None:
                 found = v.target
                 cv2.rectangle(image, (int(found[0]), int(found[1])), (int(found[2]), int(found[3])),(0,255,0), 1)
                 cv2.putText(image,'Target',
@@ -133,3 +134,11 @@ class WebRemote(web.Application):
 
     def start(self):
         self.listen(options.port)
+        self.loop = asyncio.new_event_loop()
+        self.thread = threading.Thread(target=self.start_loop)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def start_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
