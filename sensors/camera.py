@@ -9,7 +9,6 @@ PiCamera sensor implementation.
 import io
 import os
 import time
-import base64
 import io
 import logging
 import numpy as np
@@ -37,12 +36,7 @@ class PiVideoStream(BaseSensor):
                     3))
         self.frame_time = 0
         self.copied_time = 0
-        self.base64_time = 0
-        self.image_time = 0
-        self.image_buffer = None
         self.frame_buffer = None
-        self.base64_buffer = None
-
         self.framerate = framerate
         self.rotation = rotation
         self.vflip = vflip
@@ -104,7 +98,6 @@ class PiVideoStream(BaseSensor):
         '''
 
         if self.frame_time > self.copied_time and self.frame is not None:
-            # self.frame_buffer = self.frame.copy()
             image_buffer = self.frame
             if image_buffer is not None:
                 if config.camera.crop_top or config.camera.crop_bottom:
@@ -116,30 +109,6 @@ class PiVideoStream(BaseSensor):
             self.frame_buffer = image_buffer
             self.copied_time = time.time()
         return self.frame_buffer
-
-    def image(self):
-        if self.frame_time > self.image_time and self.frame is not None:
-            image_buffer = self.read()
-            if image_buffer is not None:
-                retval, encoded = cv2.imencode('.jpg', image_buffer)
-                self.image_buffer = encoded
-                self.image_time = time.time()
-        return self.image_buffer
-
-    def base64(self):
-        '''
-        Returns a base-64 encoded string corresponding
-        to the current frame. Caches result for
-        efficiency.
-        '''
-        if self.frame_time > self.base64_time:
-            image_buffer = self.image()
-            if image_buffer is not None:
-                base64_buffer = base64.b64encode(image_buffer).decode('ascii')
-                self.base64_buffer = base64_buffer
-                self.base64_time = time.time()
-
-        return self.base64_buffer
 
     def stop(self):
         self.stopped = True

@@ -38,40 +38,40 @@ class MobileNet(BasePilot):
         self.throttle = 0
         self.rover = rover
         self.f_time = 0
+        # path to the edgetpu model for mobilenet SSD
         self.model_path = model_path
         self.t = None
         self.stopped = False
         self.selected = False
-        self.frame = None
         self.frame_buffer = None
-        self.copied_time = None
-        self.base64_time = None
-        self.base64_buffer = None
+        self.target = None
+        # using a PID to control throttle
         self.pid = PID(float(config.mobilenet.P),float(config.mobilenet.I),float(config.mobilenet.D))
         super(MobileNet, self).__init__(**kwargs)
 
     async def decide(self):
         return methods.yaw_to_angle(self.yaw), self.throttle, self.frame_time
-        #return methods.yaw_to_angle(self.yaw), 0, self.frame_time
 
     async def start(self):
         model_path = self.model_path
-        if (model_path.endswith('edgetpu.tflite')):
-            from tflite_runtime.interpreter import load_delegate
-            load_delegate('libedgetpu.so.1.0')
-        await asyncio.sleep(1)
         from tflite_runtime.interpreter import Interpreter
         from tflite_runtime.interpreter import load_delegate
+        # attempt to load the edgetpu model, preferring the coral compiled version
         if (model_path.endswith('edgetpu.tflite')):
             interpreter = Interpreter(model_path=model_path,experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
         else:
             interpreter = Interpreter(model_path=model_path)
+        await asyncio.sleep(1)
+
+        # allocate model tensors and get input/output details
         interpreter.allocate_tensors()
         self.model = interpreter
         self.input_details = self.model.get_input_details()
         self.output_details = self.model.get_output_details()
         self.frame_time = 0
-        mot_tracker = Sort() #create instance of the SORT tracker
+
+        # create instance of the SORT tracker
+        mot_tracker = Sort()
         target = None
         avf_t = config.model.throttle_average_factor
         target_area = float(config.mobilenet.target_area)
@@ -87,11 +87,14 @@ class MobileNet(BasePilot):
         width = None
 
         while not self.stopped:
+            # do not run when not "on"
             if not self.selected:
                 await asyncio.sleep(0.5)
                 continue
 
             start_time = time.time()
+
+            # get the sensor readings and the image from the camera
             sensors = self.rover.sensor_reading
             image = None
             frame_time = None
@@ -101,85 +104,112 @@ class MobileNet(BasePilot):
             except Exception as e:
                 pass
 
+            # only continue if current frame time is greaer than cam frame time
             if image is not None and frame_time > self.frame_time:
+
+                # get width/height if first time around loop
                 if w is None:
                     h,w,_ = image.shape
+                    # substitute width (square image)
                     width = int((w-h)/2)
                     total_area = w*h
 
+                # crop and resize the image and prepare array for tensors
                 cropped_img = image[0:h,width:(w-width)]
                 resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
                 img_arr = np.expand_dims(resized_img, axis=0)
 
-                lowy=-1
-                if config.training.brake:
-                    lowy=0
-
+                # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
                 self.model.invoke()
+
+                # get the response arrays
                 locs = self.model.get_tensor(self.output_details[0]['index'])[0]
                 classes = self.model.get_tensor(self.output_details[1]['index'])[0]
                 scores = self.model.get_tensor(self.output_details[2]['index'])[0]
                 detections = self.model.get_tensor(self.output_details[3]['index'])[0]
                 dets = []
+
+                # produces 10 results
                 for i in range(10):
                     score = scores[i]
                     c = int(classes[i])
+                    # if the class is a person (class 0) and its high enough confidence
                     if c == 0 and score > config.mobilenet.object_confidence:
+                        # adjust dims back to full image sizes and append, retain the score for the SORT kalman tracker
                         y1 = int(locs[i][0]*h)
                         x1 = int(locs[i][1]*h)+width
                         y2 = int(locs[i][2]*h)
                         x2 = int(locs[i][3]*h)+width
                         dets.append([x1,y1,x2,y2,score])
 
+                # run candidates through the tracker
                 trackers = mot_tracker.update(np.array(dets))
 
+                # we will try to find our existing target or if not there, reset and pick the largest/closest person in frame
                 largest = None
                 found = None
                 yaw = 0
                 throttle = 0
                 for d in trackers:
+                    # for given candidate, if target is set see if there is a match on this iteration
                     if target is not None and target[4]==d[4]:
                         found = d
                         break
+                    # otherwise keep track of the largest box
                     if largest is None:
                         largest = d
                     elif ((largest[2]-largest[0])<(d[2]-d[0])):
                         largest = d
 
+                # if we didn't find the target but we have a largest box
                 if found is None and largest is not None:
                     current_height = (largest[2]-largest[0])
                     current_width = (largest[3]-largest[1])
                     current_area = current_height * current_width
+
+                    # as long as the box height is larger than the min height (rover shouldn't take off after tiny boxes!)
                     if current_height > min_height:
+                        # set the target and the found box
                         target = largest
                         found = target
+
+                        # reset the PID with set point as the target height, which is fixed (config file)
                         self.pid.clear()
                         self.pid.SetPoint = target_height
                         logging.info("Reset target")
                     else:
+                        # otherwise reset target
                         target = None
                 elif found is None:
                     target = None
 
+                # if both target and found are set
                 if found is not None and target is not None:
+                    # compute the yaw and found height
                     yaw = (((found[0]+((found[2]-found[0])/2))/w)*2)-1
-                    found_width = (found[2]-found[0])
                     found_height = (found[3]-found[1])
-                    found_area = found_width * found_height
-                    percent_height = (found_height/h)
+
+                    # if larger than max height, apply the brake
                     if found_height > max_height:
                         throttle = -1.0
                         logging.info('Mobilenet: cutoff found_height %.1f %sms'%(found_height,int(self.f_time*1000)))
                     else:
+                        # otherwise update PID and convert PID output to throttle proportion
                         self.pid.update(found_height)
                         throttle = self.pid.output/target_height
+
+                        # average throttle using factor for smooth acceleration /  decelleration
                         throttle = avf_t * self.throttle + (1.0 - avf_t) * throttle
                         logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms'%(yaw,throttle,found_height,int(self.f_time*1000)))
-                    self.rover.detection = found
-                else:
-                    self.rover.detection = None
 
+                    # save detection on the rover
+                    self.target = found
+                else:
+                    # remove detection from the rover
+                    self.target = None
+
+                # adjust yaw in incremental steps (smoothing per step)
                 yaw_step = config.model.yaw_step
                 if abs(yaw - self.yaw) < yaw_step:
                     self.yaw = yaw
@@ -189,7 +219,7 @@ class MobileNet(BasePilot):
                     yaw = self.yaw + yaw_step
 
                 self.yaw = yaw
-                self.frame = image
+                self.frame_buffer = image
                 self.throttle = throttle
                 stop_time = time.time()
                 self.frame_time = stop_time
@@ -197,34 +227,6 @@ class MobileNet(BasePilot):
                 self.fps = 1/self.f_time
             else:
                 await asyncio.sleep(0.001)
-
-    def image(self):
-        '''
-        Returns the JPEG image buffer corresponding to
-        the current frame. Caches result for
-        efficiency.
-        '''
-
-        if self.frame_time > self.copied_time and self.frame is not None:
-            # self.frame_buffer = self.frame.copy()
-            self.frame_buffer = self.frame
-            self.copied_time = time.time()
-        return self.frame_buffer
-
-    def base64(self):
-        '''
-        Returns a base-64 encoded string corresponding
-        to the current frame. Caches result for
-        efficiency.
-        '''
-        if self.frame_time > self.base64_time:
-            image_buffer = self.image()
-            if image_buffer is not None:
-                base64_buffer = base64.b64encode(image_buffer).decode('ascii')
-                self.base64_buffer = base64_buffer
-                self.base64_time = time.time()
-
-        return self.base64_buffer
 
     def stop(self):
         self.stopped = True

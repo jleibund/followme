@@ -41,8 +41,12 @@ class FileRecorder(object):
         Record a single image buffer, with frame index, angle and throttle values
         as its filename
         '''
-        image_buffer = self.rover.vision_sensor.read()
+        image_buffer = self.rover.image_buffer
+        if image_buffer is None:
+            return
         sensors = self.rover.sensor_reading
+        if sensors is None:
+            return
         angle = self.rover.pilot_angle
         throttle = self.rover.pilot_throttle
 

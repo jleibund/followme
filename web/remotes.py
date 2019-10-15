@@ -68,10 +68,20 @@ class SocketHandler(websocket.WebSocketHandler):
     def send_status(self):
         v = self.application.vehicle
         img64 = None
-        if v.vision_sensor:
-            image = v.vision_sensor.read()
+        if v.frame_buffer is not None:
+            image = v.frame_buffer
+            if v.detection is not None:
+                found = v.target
+                cv2.rectangle(image, (int(found[0]), int(found[1])), (int(found[2]), int(found[3])),(0,255,0), 1)
+                cv2.putText(image,'Target',
+                    (int(found[0]), int(found[1])),
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType)
             retval, encoded = cv2.imencode('.jpg', image)
             img64 = base64.b64encode(encoded).decode('ascii')
+
         pilot_angle = 0
         if v.pilot_angle is not None:
             pilot_angle = str(methods.angle_to_yaw(v.pilot_angle))
@@ -113,7 +123,7 @@ class WebRemote(web.Application):
         web_dir = os.path.join(base_dir, "./frontend")
         settings = {
             'template_path': web_dir,
-            'debug': True 
+            'debug': True
         }
         web.Application.__init__(self, [
             web.url(r'/', MainHandler, name="main"),
