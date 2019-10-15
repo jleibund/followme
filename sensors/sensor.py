@@ -14,9 +14,8 @@ class BaseSensor(object):
         '''
         pass
 
-    def update(self):
+    def read(self):
         '''
-        Performs sensor update steps. This is called
-        in a separate thread
+        Read sensor value
         '''
         pass

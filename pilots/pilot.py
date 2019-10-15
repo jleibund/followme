@@ -18,9 +18,11 @@ class BasePilot(object):
         self.last_modified = last_modified
 
     async def decide(self):
+        """ Decision for yaw, throttle, time """
         return 0., 0., 0.
 
     async def start(self):
+        """ Start pilot service """
         pass
 
     def pname(self):
