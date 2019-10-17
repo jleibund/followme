@@ -33,7 +33,7 @@
 
 You can start the service interactively using
 
-''' sudo ./service.sh '''
+``` sudo ./service.sh ```
 
 When it is not running as a service.
 
@@ -45,4 +45,4 @@ Use start.sh and stop.sh to start and stop as a systemd service
 
 You can tail syslog
 
-''' tail -f /var/log/syslog '''
+``` tail -f /var/log/syslog ```
