@@ -10,6 +10,8 @@ import asyncio
 from sklearn.preprocessing import MinMaxScaler
 from PIL import Image
 import math
+import pyximport   # This is part of Cython
+pyximport.install()
 from pilots.sort import Sort #create instance of the SORT tracker
 from pilots.pid import PID
 import numpy as np
@@ -59,7 +61,7 @@ class MobileNetCropper(object):
 
                 # crop and resize the image and prepare array for tensors
                 cropped_img = image[0:h,width:(w-width)]
-                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
+                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_NEAREST)
                 self.rover.cropped_buffer = resized_img
                 self.frame_time = time.time()
                 self.rover.cropped_time = self.frame_time
