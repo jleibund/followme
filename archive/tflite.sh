@@ -1,0 +1,1 @@
+tflite_convert --output_file=cnn2.tflite --graph_def_file=./models/cnn2-categorical-raw-1565559150.pb --inference_type=QUANTIZED_UINT8 --input_arrays=input_1,input_2 --output_arrays=angle_out/Softmax,throttle_out/Softmax --mean_values=128,128 --std_dev_values=127,127 --default_ranges_min=0 --default_ranges_max=6

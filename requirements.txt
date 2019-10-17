@@ -1,8 +1,8 @@
 aiofiles
 configobj
-cv2
-smbus
+opencv-contrib-pythonsmbus
 imutils
+picamera[array]
 tornado
 cython
 spidev==3.0
