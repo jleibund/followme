@@ -27,6 +27,45 @@ import warnings
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 px = 300
 
+class MobileNetCropper(object):
+    '''
+    Runs image cropping in a separate thread
+    '''
+
+    def __init__(self, rover):
+        self.stopped = False
+        self.rover = rover
+        self.frame_time = time.time()
+
+    async def start(self):
+        w = None
+        h = None
+        crop_top = int(config.camera.crop_top)
+        crop_bottom = int(config.camera.crop_bottom)
+        width = None
+
+        while not self.stopped:
+            image = self.rover.frame_buffer
+            frame_time = self.rover.frame_time
+
+            # only continue if current cam frame time is greater than mobilnet last frame time
+            if image is not None and frame_time > self.frame_time:
+                # get width/height if first time around loop
+                if w is None:
+                    h,w,_ = image.shape
+                    # substitute width (square image)
+                    width = int((w-h)/2)
+                    total_area = w*h
+
+                # crop and resize the image and prepare array for tensors
+                cropped_img = image[0:h,width:(w-width)]
+                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
+                self.rover.cropped_buffer = resized_img
+                self.frame_time = time.time()
+                self.rover.cropped_time = self.frame_time
+            else:
+                await asyncio.sleep(0.001)
+
 class MobileNet(BasePilot):
     '''
     A pilot based on a CNN with categorical output
@@ -43,7 +82,6 @@ class MobileNet(BasePilot):
         self.t = None
         self.stopped = False
         self.selected = False
-        self.frame_buffer = None
         self.target = None
         # using a PID to control throttle
         self.pid = PID(float(config.mobilenet.P),float(config.mobilenet.I),float(config.mobilenet.D))
@@ -96,30 +134,26 @@ class MobileNet(BasePilot):
 
             # get the sensor readings and the image from the camera
             sensors = self.rover.sensor_reading
-            image = self.rover.frame_buffer
-            frame_time = self.rover.frame_time
+            image = self.rover.cropped_buffer
+            frame_time = self.rover.cropped_time
 
             # only continue if current cam frame time is greater than mobilnet last frame time
             if image is not None and frame_time > self.frame_time:
 
                 # get width/height if first time around loop
-                if w is None:
-                    h,w,_ = image.shape
+                if w is None and self.rover.frame_buffer is not None:
+                    h,w,_ = self.rover.frame_buffer.shape
                     # substitute width (square image)
                     width = int((w-h)/2)
                     total_area = w*h
 
                 # crop and resize the image and prepare array for tensors
-                s0 = time.time()
-                cropped_img = image[0:h,width:(w-width)]
-                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
-                img_arr = np.expand_dims(resized_img, axis=0)
-                t0 = int((time.time()-s0)*1000)
+                s1 = time.time()
+                img_arr = np.expand_dims(image, axis=0)
+                t1 = int((time.time()-s1)*1000)
 
                 # set the tensor using uint8 and invoke
-                s1 = time.time()
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
-                t1 = int((time.time()-s1)*1000)
 
                 s2 = time.time()
                 self.model.invoke()
@@ -205,7 +239,7 @@ class MobileNet(BasePilot):
 
                         # average throttle using factor for smooth acceleration /  decelleration
                         throttle = avf_t * self.throttle + (1.0 - avf_t) * throttle
-                        logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms [t0: %sms, t1: %sms, t2: %sms, t3: %sms]'%(yaw,throttle,found_height,int((time.time()-start_time)*1000),t0,t1,t2,t3))
+                        logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms [t1: %sms, t2: %sms, t3: %sms]'%(yaw,throttle,found_height,int((time.time()-start_time)*1000),t1,t2,t3))
 
                     # save detection on the rover
                     self.target = found
@@ -223,7 +257,6 @@ class MobileNet(BasePilot):
                     yaw = self.yaw + yaw_step
 
                 self.yaw = yaw
-                self.frame_buffer = image
                 self.throttle = throttle
                 stop_time = time.time()
                 self.frame_time = stop_time
