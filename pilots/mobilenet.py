@@ -114,21 +114,22 @@ class MobileNet(BasePilot):
                 cropped_img = image[0:h,width:(w-width)]
                 resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
                 img_arr = np.expand_dims(resized_img, axis=0)
+                t0 = int((time.time()-s0)*1000)
 
                 # set the tensor using uint8 and invoke
-                self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
-                t0 = int((time.time()-s0)*1000)
                 s1 = time.time()
-                self.model.invoke()
+                self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
                 t1 = int((time.time()-s1)*1000)
 
-                # get the response arrays
                 s2 = time.time()
+                self.model.invoke()
+                t2 = int((time.time()-s2)*1000)
+
+                # get the response arrays
                 locs = self.model.get_tensor(self.output_details[0]['index'])[0]
                 classes = self.model.get_tensor(self.output_details[1]['index'])[0]
                 scores = self.model.get_tensor(self.output_details[2]['index'])[0]
                 detections = self.model.get_tensor(self.output_details[3]['index'])[0]
-                t2 = int((time.time()-s2)*1000)
                 dets = []
 
                 # produces 10 results
