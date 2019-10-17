@@ -99,7 +99,7 @@ class Rover(object):
         start_thread(self.sonar_sensor)
         start_thread(self.vision_sensor)
         start_thread(self.mobilenet)
-        start_thread(self.cropper)
+        #start_thread(self.cropper)
         self.remote.start()
         # wait and read sensors
         await asyncio.sleep(0.1)
@@ -140,12 +140,12 @@ class Rover(object):
             except Exception as e:
                 pass
 
-        pilot_time = time.time()
-
         # complete frame decision, if no other inputs use raw vision sensor frame
         if self.vision_sensor:
             self.frame_buffer = self.vision_sensor.read()
             self.frame_time = time.time()
+
+        pilot_time = time.time()
 
         # run auto pilots
         for pilot_index in range(0,len(self.auto_pilots)):

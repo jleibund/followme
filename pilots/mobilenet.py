@@ -136,8 +136,8 @@ class MobileNet(BasePilot):
 
             # get the sensor readings and the image from the camera
             sensors = self.rover.sensor_reading
-            image = self.rover.cropped_buffer
-            frame_time = self.rover.cropped_time
+            image = self.rover.frame_buffer
+            frame_time = self.rover.frame_time
 
             # only continue if current cam frame time is greater than mobilnet last frame time
             if image is not None and frame_time > self.frame_time:

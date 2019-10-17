@@ -63,7 +63,7 @@ class PiVideoStream(BaseSensor):
                 await asyncio.sleep(2)
                 logging.info("PiVideoStream starting continuous stream")
                 for f in camera.capture_continuous(
-                        rawCapture, format="bgr", use_video_port=True):
+                        rawCapture, format="bgr", resize=(config.camera.resize_width,config.camera.resize_height), use_video_port=True):
                     frame = f.array
                     if frame is None:
                         await asyncio.sleep(0.1)
