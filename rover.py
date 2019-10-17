@@ -7,7 +7,7 @@ import asyncio
 from config import config
 from filerecorder import FileRecorder
 from sensors import StereoSonar, IMU, PiVideoStream, volts_to_distance
-from pilots import RC, MobileNet
+from pilots import RC, MobileNet, MobileNetCropper
 from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
@@ -44,6 +44,7 @@ class Rover(object):
 
         # initialize autonomous pilot
         self.mobilenet = MobileNet(self)
+        self.cropper = MobileNetCropper(self)
         auto_pilots.append(self.mobilenet)
         self.auto_pilots = auto_pilots
 
@@ -76,6 +77,9 @@ class Rover(object):
         self.record = False
         self.auto_throttle = False
         self.frame_buffer = None
+        self.frame_time = None
+        self.cropped_buffer = None
+        self.cropped_time = None
         self.pilot_angle = None
         # holds mobilnet box when detected
         self.target = None
@@ -95,6 +99,7 @@ class Rover(object):
         start_thread(self.sonar_sensor)
         start_thread(self.vision_sensor)
         start_thread(self.mobilenet)
+        #start_thread(self.cropper)
         self.remote.start()
         # wait and read sensors
         await asyncio.sleep(0.1)
@@ -135,11 +140,12 @@ class Rover(object):
             except Exception as e:
                 pass
 
-        pilot_time = time.time()
-
         # complete frame decision, if no other inputs use raw vision sensor frame
         if self.vision_sensor:
             self.frame_buffer = self.vision_sensor.read()
+            self.frame_time = time.time()
+
+        pilot_time = time.time()
 
         # run auto pilots
         for pilot_index in range(0,len(self.auto_pilots)):
@@ -168,6 +174,7 @@ class Rover(object):
                     pass
             else:
                 pilot.selected = False
+                self.target = None
 
 
         # get the safety distance (ft) and closest sonar reading

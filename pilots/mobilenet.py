@@ -10,6 +10,8 @@ import asyncio
 from sklearn.preprocessing import MinMaxScaler
 from PIL import Image
 import math
+import pyximport   # This is part of Cython
+pyximport.install()
 from pilots.sort import Sort #create instance of the SORT tracker
 from pilots.pid import PID
 import numpy as np
@@ -27,6 +29,43 @@ import warnings
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 px = 300
 
+class MobileNetCropper(object):
+    '''
+    Runs image cropping in a separate thread
+    '''
+
+    def __init__(self, rover):
+        self.stopped = False
+        self.rover = rover
+        self.frame_time = time.time()
+
+    async def start(self):
+        w = None
+        h = None
+        width = None
+
+        while not self.stopped:
+            image = self.rover.frame_buffer
+            frame_time = self.rover.frame_time
+
+            # only continue if current cam frame time is greater than mobilnet last frame time
+            if image is not None and frame_time > self.frame_time:
+                # get width/height if first time around loop
+                if w is None:
+                    h,w,_ = image.shape
+                    # substitute width (square image)
+                    width = int((w-h)/2)
+                    total_area = w*h
+
+                # crop and resize the image and prepare array for tensors
+                cropped_img = image[0:h,width:(w-width)]
+                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_NEAREST)
+                self.rover.cropped_buffer = resized_img
+                self.frame_time = time.time()
+                self.rover.cropped_time = self.frame_time
+            else:
+                await asyncio.sleep(0.001)
+
 class MobileNet(BasePilot):
     '''
     A pilot based on a CNN with categorical output
@@ -43,7 +82,6 @@ class MobileNet(BasePilot):
         self.t = None
         self.stopped = False
         self.selected = False
-        self.frame_buffer = None
         self.target = None
         # using a PID to control throttle
         self.pid = PID(float(config.mobilenet.P),float(config.mobilenet.I),float(config.mobilenet.D))
@@ -74,16 +112,12 @@ class MobileNet(BasePilot):
         mot_tracker = Sort()
         target = None
         avf_t = config.model.throttle_average_factor
-        target_area = float(config.mobilenet.target_area)
-        min_area = float(config.mobilenet.min_area)
         min_height = float(config.mobilenet.min_height)
         max_height = float(config.mobilenet.max_height)
         target_height = float(config.mobilenet.target_height)
         total_area = None
         w = None
         h = None
-        crop_top = int(config.camera.crop_top)
-        crop_bottom = int(config.camera.crop_bottom)
         width = None
 
         while not self.stopped:
@@ -96,34 +130,30 @@ class MobileNet(BasePilot):
 
             # get the sensor readings and the image from the camera
             sensors = self.rover.sensor_reading
-            image = None
-            frame_time = None
-            try:
-                image = self.rover.vision_sensor.read()
-                frame_time = self.rover.vision_sensor.frame_time
-            except Exception as e:
-                pass
+            image = self.rover.frame_buffer
+            frame_time = self.rover.frame_time
 
             # only continue if current cam frame time is greater than mobilnet last frame time
             if image is not None and frame_time > self.frame_time:
 
                 # get width/height if first time around loop
-                if w is None:
-                    h,w,_ = image.shape
+                if w is None and self.rover.frame_buffer is not None:
+                    h,w,_ = self.rover.frame_buffer.shape
                     # substitute width (square image)
                     width = int((w-h)/2)
                     total_area = w*h
 
                 # crop and resize the image and prepare array for tensors
-                cropped_img = image[0:h,width:(w-width)]
-                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
-                img_arr = np.expand_dims(resized_img, axis=0)
+                s1 = time.time()
+                img_arr = np.expand_dims(image, axis=0)
+                t1 = int((time.time()-s1)*1000)
 
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
-                s1 = time.time()
+
+                s2 = time.time()
                 self.model.invoke()
-                t1 = int((time.time()-s1)*1000)
+                t2 = int((time.time()-s2)*1000)
 
                 # get the response arrays
                 locs = self.model.get_tensor(self.output_details[0]['index'])[0]
@@ -146,10 +176,10 @@ class MobileNet(BasePilot):
                         dets.append([x1,y1,x2,y2,score])
 
                 # run candidates through the tracker
-                s2 = time.time()
+                s3 = time.time()
                 trackers = mot_tracker.update(np.array(dets))
-                t2 = int((time.time()-s2)*1000)
-                
+                t3 = int((time.time()-s3)*1000)
+
                 # we will try to find our existing target or if not there, reset and pick the largest/closest person in frame
                 largest = None
                 found = None
@@ -200,9 +230,7 @@ class MobileNet(BasePilot):
                         logging.info('Mobilenet: cutoff found_height %.1f %sms'%(found_height,int((time.time()-start_time)*1000)))
                     else:
                         # otherwise update PID and convert PID output to throttle proportion
-                        s3 = time.time()
                         self.pid.update(found_height)
-                        t3 = int((time.time()-s3)*1000)
                         throttle = self.pid.output/target_height
 
                         # average throttle using factor for smooth acceleration /  decelleration
@@ -225,7 +253,6 @@ class MobileNet(BasePilot):
                     yaw = self.yaw + yaw_step
 
                 self.yaw = yaw
-                self.frame_buffer = image
                 self.throttle = throttle
                 stop_time = time.time()
                 self.frame_time = stop_time
