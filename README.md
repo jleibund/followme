@@ -1,7 +1,7 @@
 # Autonomous "Follow-Me" Rover
 ![Tekno EB410 "Follow-Me" Rover](https://github.com/jleibund/followme/blob/dev/rover_side.jpg?raw=true)
 
-##Part List
+## Parts List
 - Tekno EB410 Rover
 - Google Coral EdgeTPU
 - RPi 3B+ (soon 4)
