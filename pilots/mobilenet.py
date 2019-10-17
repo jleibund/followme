@@ -29,43 +29,6 @@ import warnings
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 px = 300
 
-class MobileNetCropper(object):
-    '''
-    Runs image cropping in a separate thread
-    '''
-
-    def __init__(self, rover):
-        self.stopped = False
-        self.rover = rover
-        self.frame_time = time.time()
-
-    async def start(self):
-        w = None
-        h = None
-        width = None
-
-        while not self.stopped:
-            image = self.rover.frame_buffer
-            frame_time = self.rover.frame_time
-
-            # only continue if current cam frame time is greater than mobilnet last frame time
-            if image is not None and frame_time > self.frame_time:
-                # get width/height if first time around loop
-                if w is None:
-                    h,w,_ = image.shape
-                    # substitute width (square image)
-                    width = int((w-h)/2)
-                    total_area = w*h
-
-                # crop and resize the image and prepare array for tensors
-                cropped_img = image[0:h,width:(w-width)]
-                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_NEAREST)
-                self.rover.cropped_buffer = resized_img
-                self.frame_time = time.time()
-                self.rover.cropped_time = self.frame_time
-            else:
-                await asyncio.sleep(0.001)
-
 class MobileNet(BasePilot):
     '''
     A pilot based on a CNN with categorical output

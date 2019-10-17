@@ -7,7 +7,7 @@ import asyncio
 from config import config
 from filerecorder import FileRecorder
 from sensors import StereoSonar, IMU, PiVideoStream, volts_to_distance
-from pilots import RC, MobileNet, MobileNetCropper
+from pilots import RC, MobileNet
 from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
@@ -44,7 +44,6 @@ class Rover(object):
 
         # initialize autonomous pilot
         self.mobilenet = MobileNet(self)
-        self.cropper = MobileNetCropper(self)
         auto_pilots.append(self.mobilenet)
         self.auto_pilots = auto_pilots
 
@@ -99,7 +98,6 @@ class Rover(object):
         start_thread(self.sonar_sensor)
         start_thread(self.vision_sensor)
         start_thread(self.mobilenet)
-        #start_thread(self.cropper)
         self.remote.start()
         # wait and read sensors
         await asyncio.sleep(0.1)

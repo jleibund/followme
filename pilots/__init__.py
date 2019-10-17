@@ -1,3 +1,3 @@
 from .pilot import BasePilot
-from .mobilenet import MobileNet, MobileNetCropper
+from .mobilenet import MobileNet
 from .rc import RC
