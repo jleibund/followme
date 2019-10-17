@@ -56,6 +56,7 @@ class PiVideoStream(BaseSensor):
                 camera.vflip = self.vflip
                 camera.hflip = self.vflip
                 camera.exposure_mode = self.exposure_mode
+                resize=config.camera.resize
                 rawCapture = PiRGBArray(camera, size=self.resolution)
 
                 logging.info("PiVideoStream loaded.. .warming camera")
@@ -63,7 +64,7 @@ class PiVideoStream(BaseSensor):
                 await asyncio.sleep(2)
                 logging.info("PiVideoStream starting continuous stream")
                 for f in camera.capture_continuous(
-                        rawCapture, format="bgr", resize=(config.camera.resize_width,config.camera.resize_height), use_video_port=True):
+                        rawCapture, format="bgr", use_video_port=True):
                     frame = f.array
                     if frame is None:
                         await asyncio.sleep(0.1)
@@ -104,7 +105,7 @@ class PiVideoStream(BaseSensor):
                     h, w, _ = image_buffer.shape
                     t = config.camera.crop_top
                     l = h - config.camera.crop_bottom
-                    image_buffer = image_buffer[t:l, :]
+                    image_buffer = image_buffer[80:380,160:460]
 
             self.frame_buffer = image_buffer
             self.copied_time = time.time()

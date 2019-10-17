@@ -1,3 +1,3 @@
 #!/bin/bash -
 
-sudo systemctl stop follome
+sudo systemctl start followme

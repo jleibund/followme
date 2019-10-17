@@ -174,6 +174,7 @@ class Rover(object):
                     pass
             else:
                 pilot.selected = False
+                self.target = None
 
 
         # get the safety distance (ft) and closest sonar reading

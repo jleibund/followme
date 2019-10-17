@@ -114,8 +114,6 @@ class MobileNet(BasePilot):
         mot_tracker = Sort()
         target = None
         avf_t = config.model.throttle_average_factor
-        target_area = float(config.mobilenet.target_area)
-        min_area = float(config.mobilenet.min_area)
         min_height = float(config.mobilenet.min_height)
         max_height = float(config.mobilenet.max_height)
         target_height = float(config.mobilenet.target_height)
