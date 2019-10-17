@@ -42,8 +42,6 @@ class MobileNetCropper(object):
     async def start(self):
         w = None
         h = None
-        crop_top = int(config.camera.crop_top)
-        crop_bottom = int(config.camera.crop_bottom)
         width = None
 
         while not self.stopped:
@@ -120,8 +118,6 @@ class MobileNet(BasePilot):
         total_area = None
         w = None
         h = None
-        crop_top = int(config.camera.crop_top)
-        crop_bottom = int(config.camera.crop_bottom)
         width = None
 
         while not self.stopped:
