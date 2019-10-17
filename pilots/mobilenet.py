@@ -96,13 +96,8 @@ class MobileNet(BasePilot):
 
             # get the sensor readings and the image from the camera
             sensors = self.rover.sensor_reading
-            image = None
-            frame_time = None
-            try:
-                image = self.rover.vision_sensor.read()
-                frame_time = self.rover.vision_sensor.frame_time
-            except Exception as e:
-                pass
+            image = self.rover.frame_buffer
+            frame_time = self.rover.frame_time
 
             # only continue if current cam frame time is greater than mobilnet last frame time
             if image is not None and frame_time > self.frame_time:
@@ -115,21 +110,25 @@ class MobileNet(BasePilot):
                     total_area = w*h
 
                 # crop and resize the image and prepare array for tensors
+                s0 = time.time()
                 cropped_img = image[0:h,width:(w-width)]
                 resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
                 img_arr = np.expand_dims(resized_img, axis=0)
 
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
+                t0 = int((time.time()-s0)*1000)
                 s1 = time.time()
                 self.model.invoke()
                 t1 = int((time.time()-s1)*1000)
 
                 # get the response arrays
+                s2 = time.time()
                 locs = self.model.get_tensor(self.output_details[0]['index'])[0]
                 classes = self.model.get_tensor(self.output_details[1]['index'])[0]
                 scores = self.model.get_tensor(self.output_details[2]['index'])[0]
                 detections = self.model.get_tensor(self.output_details[3]['index'])[0]
+                t2 = int((time.time()-s2)*1000)
                 dets = []
 
                 # produces 10 results
@@ -146,10 +145,10 @@ class MobileNet(BasePilot):
                         dets.append([x1,y1,x2,y2,score])
 
                 # run candidates through the tracker
-                s2 = time.time()
+                s3 = time.time()
                 trackers = mot_tracker.update(np.array(dets))
-                t2 = int((time.time()-s2)*1000)
-                
+                t3 = int((time.time()-s3)*1000)
+
                 # we will try to find our existing target or if not there, reset and pick the largest/closest person in frame
                 largest = None
                 found = None
@@ -200,14 +199,12 @@ class MobileNet(BasePilot):
                         logging.info('Mobilenet: cutoff found_height %.1f %sms'%(found_height,int((time.time()-start_time)*1000)))
                     else:
                         # otherwise update PID and convert PID output to throttle proportion
-                        s3 = time.time()
                         self.pid.update(found_height)
-                        t3 = int((time.time()-s3)*1000)
                         throttle = self.pid.output/target_height
 
                         # average throttle using factor for smooth acceleration /  decelleration
                         throttle = avf_t * self.throttle + (1.0 - avf_t) * throttle
-                        logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms [t1: %sms, t2: %sms, t3: %sms]'%(yaw,throttle,found_height,int((time.time()-start_time)*1000),t1,t2,t3))
+                        logging.info('Mobilenet: yaw %.3f throttle %.3f height %.1f %sms [t0: %sms, t1: %sms, t2: %sms, t3: %sms]'%(yaw,throttle,found_height,int((time.time()-start_time)*1000),t0,t1,t2,t3))
 
                     # save detection on the rover
                     self.target = found

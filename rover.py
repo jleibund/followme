@@ -76,6 +76,7 @@ class Rover(object):
         self.record = False
         self.auto_throttle = False
         self.frame_buffer = None
+        self.frame_time = None
         self.pilot_angle = None
         # holds mobilnet box when detected
         self.target = None
@@ -140,6 +141,7 @@ class Rover(object):
         # complete frame decision, if no other inputs use raw vision sensor frame
         if self.vision_sensor:
             self.frame_buffer = self.vision_sensor.read()
+            self.frame_time = time.time()
 
         # run auto pilots
         for pilot_index in range(0,len(self.auto_pilots)):

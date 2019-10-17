@@ -21,6 +21,7 @@ export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 source /usr/local/bin/virtualenvwrapper.sh
 mkvirtualenv followme -p python3
 workon followme
+wget https://dl.google.com/coral/python/tflite_runtime-1.14.0-cp35-cp35m-linux_armv7l.whl
 pip install -r requirements.txt
 pip install -e .
 echo 'export WORKON_HOME=$HOME/.virtualenvs' >> ~/.bashrc
