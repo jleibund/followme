@@ -100,9 +100,14 @@ class PiVideoStream(BaseSensor):
         if self.frame_time > self.copied_time and self.frame is not None:
             image_buffer = self.frame
             if image_buffer is not None:
+                if config.camera.crop_top or config.camera.crop_bottom:
+                    h, w, _ = image_buffer.shape
+                    t = config.camera.crop_top
+                    l = h - config.camera.crop_bottom
+                    image_buffer = image_buffer[t:l, :]
+
                 if config.camera.resize:
                     (w1, h1) = config.camera.resize
-                    (w2, h2) = config.camera.resolution
                     h,w,_ = image_buffer.shape
                     width = int((w-h)/2)
                     cropped_img = image_buffer[0:h,width:(w-width)]
