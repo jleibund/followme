@@ -103,9 +103,9 @@ class PiVideoStream(BaseSensor):
                 if config.camera.resize:
                     (w1, h1) = config.camera.resize
                     (w2, h2) = config.camera.resolution
-                    h,w,_ = image.shape
+                    h,w,_ = image_buffer.shape
                     width = int((w-h)/2)
-                    cropped_img = image[0:h,width:(w-width)]
+                    cropped_img = image_buffer[0:h,width:(w-width)]
                     resized_img = cv2.resize(cropped_img, (w1,h1), interpolation = cv2.INTER_AREA)
                     image_buffer = resized_img
 
