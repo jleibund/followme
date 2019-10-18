@@ -224,7 +224,9 @@ class Rover(object):
 
         # if recording, exec recorder
         if self.record and self.recorder is not None:
-            self.recorder.record_frame()
+            #self.recorder.record_frame()
+            # not currently in use
+            pass
 
         if self.recorder and self.recorder.is_recording:
             self.set_indicator('recording')
