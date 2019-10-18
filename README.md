@@ -18,7 +18,7 @@
 - Radiolink T8FB Transmitter (SBUS)
 - 3MM Plexiglass Sheet / Cutter
 
-## Install Instructions
+## Instructions
 
 - Build the vehicle.  Obtain RPi 3b+ (or 4 when EMLID image is available), Camera, Wifi AP, Google Coral USB EdgeTPU
 - Use EMLID NAVIO2 Raspian Image, Complete Hardware Setup & Installation:  https://docs.emlid.com/navio2/ardupilot/hardware-setup/
