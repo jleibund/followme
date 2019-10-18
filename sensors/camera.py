@@ -106,14 +106,6 @@ class PiVideoStream(BaseSensor):
                     l = h - config.camera.crop_bottom
                     image_buffer = image_buffer[t:l, :]
 
-                if config.camera.resize:
-                    (w1, h1) = config.camera.resize
-                    h,w,_ = image_buffer.shape
-                    width = int((w-h)/2)
-                    cropped_img = image_buffer[0:h,width:(w-width)]
-                    resized_img = cv2.resize(cropped_img, (w1,h1), interpolation = cv2.INTER_AREA)
-                    image_buffer = resized_img
-
             self.frame_buffer = image_buffer
             self.copied_time = time.time()
         return self.frame_buffer
