@@ -23,7 +23,7 @@ def start_loop(loop,tasks):
         loop.run_until_complete(task.start())
 
 def start_thread(tasks):
-    if task is None:
+    if tasks is None:
         return
     loop = asyncio.new_event_loop()
     thread = Thread(target=start_loop,args=(loop,tasks))
@@ -31,8 +31,8 @@ def start_thread(tasks):
     thread.start()
     return thread
 
-def start_process(task):
-    if task is None:
+def start_process(tasks):
+    if tasks is None:
         return
     loop = asyncio.new_event_loop()
     process = Process(target=start_loop,args=(loop,tasks))

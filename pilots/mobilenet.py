@@ -86,7 +86,7 @@ class MobileNet(BasePilot):
 
     async def start(self):
         if config.mobilenet.threaded_resize:
-            start_thread(self.resizer)
+            start_thread([self.resizer])
 
         model_path = self.model_path
         from tflite_runtime.interpreter import Interpreter
