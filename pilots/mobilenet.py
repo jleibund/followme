@@ -111,9 +111,10 @@ class MobileNet(BasePilot):
                 cropped_img = image[0:h,width:(w-width)]
                 resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
                 img_arr = np.expand_dims(resized_img, axis=0)
+                t1 = int((time.time()-s1)*1000)
+
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
-                t1 = int((time.time()-s1)*1000)
 
                 s2 = time.time()
                 self.model.invoke()
