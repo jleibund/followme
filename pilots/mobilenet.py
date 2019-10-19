@@ -22,12 +22,44 @@ from sklearn.preprocessing import MinMaxScaler
 import cv2
 import time
 import logging
-from methods import min_abs
+from methods import min_abs, start_loop, start_thread, start_process
 import base64
 
 import warnings
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 px = 300
+
+class Resizer(object):
+    def __init__(self,mobilenet,**kwargs):
+        self.mobilenet = mobilenet
+        self.rover = mobilenet.rover
+        self.frame_time = 0
+        self.img_arr = None
+        (self.w,self.h) = config.camera.resolution
+        self.width = int((self.w-self.h)/2)
+
+    def resize(self):
+        image = self.rover.frame_buffer
+        frame_time = self.rover.frame_time
+        # only continue if current cam frame time is greater than mobilnet last frame time
+        if image is not None and (self.frame_time==0 or self.frame_time < self.mobilenet.frame_time):
+            cropped_img = image[0:self.h,self.width:(self.w-self.width)]
+            resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
+            self.img_arr = np.expand_dims(resized_img, axis=0)
+            self.frame_time = time.time()
+            return self.img_arr, self.frame_time
+        return self.img_arr, self.frame_time
+
+    async def start(self):
+        while not self.mobilenet.stopped:
+            if not self.mobilenet.selected:
+                await asyncio.sleep(0.1)
+                continue
+            before = self.frame_time
+            (i,t) = self.resize()
+            if (t==before):
+                await asyncio.sleep(0.01)
+
 
 class MobileNet(BasePilot):
     '''
@@ -46,6 +78,7 @@ class MobileNet(BasePilot):
         self.stopped = False
         self.selected = False
         self.target = None
+        self.resizer = Resizer(self)
         # using a PID to control throttle
         self.pid = PID(float(config.mobilenet.P),float(config.mobilenet.I),float(config.mobilenet.D))
         super(MobileNet, self).__init__(**kwargs)
@@ -54,6 +87,9 @@ class MobileNet(BasePilot):
         return methods.yaw_to_angle(self.yaw), self.throttle, self.frame_time
 
     async def start(self):
+        if config.mobilenet.threaded_resize:
+            start_thread(self.resizer)
+
         model_path = self.model_path
         from tflite_runtime.interpreter import Interpreter
         from tflite_runtime.interpreter import load_delegate
@@ -78,40 +114,30 @@ class MobileNet(BasePilot):
         min_height = float(config.mobilenet.min_height)
         max_height = float(config.mobilenet.max_height)
         target_height = float(config.mobilenet.target_height)
-        total_area = None
-        w = None
-        h = None
-        width = None
+        (w,h) = config.camera.resolution
+        width = int((w-h)/2)
 
         while not self.stopped:
             # do not run when not "on"
             if not self.selected:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 continue
 
             start_time = time.time()
 
             # get the sensor readings and the image from the camera
             sensors = self.rover.sensor_reading
-            image = self.rover.frame_buffer
-            frame_time = self.rover.frame_time
+
+            s1 = time.time()
+            if config.mobilenet.threaded_resize:
+                img_arr = self.resizer.img_arr
+                frame_time = self.resizer.frame_time
+            else:
+                img_arr, frame_time = self.resizer.resize()
+            t1 = int((time.time()-s1)*1000)
 
             # only continue if current cam frame time is greater than mobilnet last frame time
-            if image is not None and frame_time > self.frame_time:
-
-                # get width/height if first time around loop
-                if w is None and self.rover.frame_buffer is not None:
-                    h,w,_ = self.rover.frame_buffer.shape
-                    # substitute width (square image)
-                    width = int((w-h)/2)
-                    total_area = w*h
-
-                # crop and resize the image and prepare array for tensors
-                s1 = time.time()
-                cropped_img = image[0:h,width:(w-width)]
-                resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
-                img_arr = np.expand_dims(resized_img, axis=0)
-                t1 = int((time.time()-s1)*1000)
+            if img_arr is not None:
 
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
