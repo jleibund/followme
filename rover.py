@@ -11,23 +11,8 @@ from pilots import RC, MobileNet
 from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
-from methods import min_abs
+from methods import min_abs, start_loop, start_thread
 from threading import Thread
-
-def start_loop(loop,task):
-    if task is None:
-        return
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(task.start())
-
-def start_thread(task):
-    if task is None:
-        return
-    loop = asyncio.new_event_loop()
-    thread = Thread(target=start_loop,args=(loop,task))
-    thread.daemon = True
-    thread.start()
-    return thread
 
 class Rover(object):
     '''
@@ -224,9 +209,7 @@ class Rover(object):
 
         # if recording, exec recorder
         if self.record and self.recorder is not None:
-            #self.recorder.record_frame()
-            # not currently in use
-            pass
+            self.recorder.record_frame()
 
         if self.recorder and self.recorder.is_recording:
             self.set_indicator('recording')
