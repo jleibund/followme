@@ -6,6 +6,7 @@ import re
 import time
 import asyncio
 from threading import Thread
+from multiprocessing import Process, Queue
 import numpy as np
 
 from config import config
@@ -14,20 +15,29 @@ from config import config
 '''
 IOLOOP and Threads
 '''
-def start_loop(loop,task):
+def start_loop(loop,tasks):
     if task is None:
         return
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(task.start())
+    for task in tasks:
+        loop.run_until_complete(task.start())
 
-def start_thread(task):
+def start_thread(tasks):
     if task is None:
         return
     loop = asyncio.new_event_loop()
-    thread = Thread(target=start_loop,args=(loop,task))
+    thread = Thread(target=start_loop,args=(loop,tasks))
     thread.daemon = True
     thread.start()
     return thread
+
+def start_process(task):
+    if task is None:
+        return
+    loop = asyncio.new_event_loop()
+    process = Process(target=start_loop,args=(loop,tasks))
+    process.start()
+    return process
 
 
 '''

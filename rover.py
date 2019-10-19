@@ -12,6 +12,7 @@ from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
 from methods import min_abs, start_loop, start_thread
+from multiprocessing import Queue
 from threading import Thread
 
 class Rover(object):
@@ -39,7 +40,8 @@ class Rover(object):
         self.recorder = FileRecorder(self)
 
         # initialize camera
-        self.vision_sensor = PiVideoStream()
+        self.vision_queue = Queue()
+        self.vision_sensor = PiVideoStream(self.vision_queue)
 
         # initialize sonar
         self.sonar_sensor = StereoSonar()
@@ -79,9 +81,8 @@ class Rover(object):
     async def run(self):
         # start services
         self.set_indicator('warmup')
-        start_thread(self.imu_sensor)
-        start_thread(self.sonar_sensor)
-        start_thread(self.vision_sensor)
+        start_thread([self.imu_sensor,self.sonar_sensor])
+        start_process(self.vision_sensor)
         start_thread(self.mobilenet)
         self.remote.start()
         # wait and read sensors
@@ -124,11 +125,11 @@ class Rover(object):
                 pass
 
         # complete frame decision, if no other inputs use raw vision sensor frame
-        if self.vision_sensor:
-            self.frame_buffer = self.vision_sensor.read()
-            self.frame_time = time.time()
-
         pilot_time = time.time()
+        if self.vision_sensor:
+            frame_time = 0
+            while pilot_time < frame_time:
+                frame_buffer, frame_time = self.vision_queue.get()
 
         # run auto pilots
         for pilot_index in range(0,len(self.auto_pilots)):

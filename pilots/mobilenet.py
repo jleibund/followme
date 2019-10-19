@@ -31,11 +31,11 @@ px = 300
 
 class Resizer(object):
     def __init__(self,mobilenet,**kwargs):
-        self.mobilenet
+        self.mobilenet = mobilenet
         self.rover = mobilenet.rover
         self.frame_time = 0
         self.img_arr = None
-        (self.w,self.h) = self.config.resolution
+        (self.w,self.h) = config.camera.resolution
         self.width = int((self.w-self.h)/2)
 
     async def resize(self):
@@ -53,6 +53,9 @@ class Resizer(object):
 
     async def start(self):
         while not self.mobilenet.stopped:
+            if not self.mobilenet.selected:
+                await asyncio.sleep(0.1)
+                continue
             self.img_arr, self.frame_time = await self.resize()
 
 
@@ -109,7 +112,7 @@ class MobileNet(BasePilot):
         min_height = float(config.mobilenet.min_height)
         max_height = float(config.mobilenet.max_height)
         target_height = float(config.mobilenet.target_height)
-        (w,h) = self.config.resolution
+        (w,h) = config.camera.resolution
         width = int((w-h)/2)
 
         while not self.stopped:
