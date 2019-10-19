@@ -15,9 +15,10 @@ from config import config
 '''
 IOLOOP and Threads
 '''
-def start_loop(loop,tasks):
+def start_loop(tasks):
     if tasks is None:
         return
+    loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     for task in tasks:
         loop.run_until_complete(task.start())
@@ -25,8 +26,7 @@ def start_loop(loop,tasks):
 def start_thread(tasks):
     if tasks is None:
         return
-    loop = asyncio.new_event_loop()
-    thread = Thread(target=start_loop,args=(loop,tasks))
+    thread = Thread(target=start_loop,args=(tasks))
     thread.daemon = True
     thread.start()
     return thread
@@ -34,8 +34,7 @@ def start_thread(tasks):
 def start_process(tasks):
     if tasks is None:
         return
-    loop = asyncio.new_event_loop()
-    process = Process(target=start_loop,args=(loop,tasks))
+    process = Process(target=start_loop,args=(tasks))
     process.start()
     return process
 
