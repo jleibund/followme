@@ -82,8 +82,8 @@ class Rover(object):
         # start services
         self.set_indicator('warmup')
         start_thread([self.imu_sensor,self.sonar_sensor])
-        start_process(self.vision_sensor)
-        start_thread(self.mobilenet)
+        start_process([self.vision_sensor])
+        start_thread([self.mobilenet])
         self.remote.start()
         # wait and read sensors
         await asyncio.sleep(0.1)
