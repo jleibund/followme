@@ -11,7 +11,7 @@ from pilots import RC, MobileNet
 from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
-from methods import min_abs, start_loop, start_thread
+from methods import min_abs, start_loop, start_thread, start_process
 from multiprocessing import Queue
 from threading import Thread
 
