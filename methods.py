@@ -16,7 +16,7 @@ from config import config
 IOLOOP and Threads
 '''
 def start_loop(loop,tasks):
-    if task is None:
+    if tasks is None:
         return
     asyncio.set_event_loop(loop)
     for task in tasks:
