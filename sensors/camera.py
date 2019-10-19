@@ -21,13 +21,12 @@ from .sensor import BaseSensor
 
 class PiVideoStream(BaseSensor):
 
-    def __init__(self, queue, resolution=config.camera.resolution,
+    def __init__(self, resolution=config.camera.resolution,
             framerate=config.camera.framerate,
             rotation=config.camera.rotation,
             vflip=config.camera.vflip,
             **kwargs):
         super(PiVideoStream, self).__init__(**kwargs)
-        self.queue = queue
         self.resolution = resolution
         self.frame = np.zeros(
                 shape=(
@@ -72,7 +71,6 @@ class PiVideoStream(BaseSensor):
                     self.frame = frame
                     rawCapture.truncate(0)
                     self.frame_time = time.time()
-                    self.queue.put(self.read())
                     await asyncio.sleep(0.001)
                     if self.stopped:
                         return

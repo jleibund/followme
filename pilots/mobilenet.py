@@ -22,7 +22,7 @@ from sklearn.preprocessing import MinMaxScaler
 import cv2
 import time
 import logging
-from methods import min_abs, start_loop, start_thread
+from methods import min_abs, start_loop, start_thread, start_process
 import base64
 
 import warnings
@@ -38,25 +38,27 @@ class Resizer(object):
         (self.w,self.h) = config.camera.resolution
         self.width = int((self.w-self.h)/2)
 
-    async def resize(self):
+    def resize(self):
         image = self.rover.frame_buffer
         frame_time = self.rover.frame_time
         # only continue if current cam frame time is greater than mobilnet last frame time
-        if image is not None and frame_time > self.frame_time:
+        if image is not None and (self.frame_time==0 or self.frame_time < self.mobilenet.frame_time):
             cropped_img = image[0:self.h,self.width:(self.w-self.width)]
             resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
-            img_arr = np.expand_dims(resized_img, axis=0)
-            frame_time = time.time()
-            return img_arr, frame_time
-        await asyncio.sleep(0.1)
-        return None, None
+            self.img_arr = np.expand_dims(resized_img, axis=0)
+            self.frame_time = time.time()
+            return self.img_arr, self.frame_time
+        return self.img_arr, self.frame_time
 
     async def start(self):
         while not self.mobilenet.stopped:
             if not self.mobilenet.selected:
                 await asyncio.sleep(0.1)
                 continue
-            self.img_arr, self.frame_time = await self.resize()
+            before = self.frame_time
+            (i,t) = self.resize()
+            if (t==before):
+                await asyncio.sleep(0.01)
 
 
 class MobileNet(BasePilot):
@@ -86,7 +88,7 @@ class MobileNet(BasePilot):
 
     async def start(self):
         if config.mobilenet.threaded_resize:
-            start_thread([self.resizer])
+            start_thread(self.resizer)
 
         model_path = self.model_path
         from tflite_runtime.interpreter import Interpreter
@@ -118,7 +120,7 @@ class MobileNet(BasePilot):
         while not self.stopped:
             # do not run when not "on"
             if not self.selected:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 continue
 
             start_time = time.time()
@@ -128,13 +130,14 @@ class MobileNet(BasePilot):
 
             s1 = time.time()
             if config.mobilenet.threaded_resize:
-                img_arr, frame_time = self.resizer.img_arr
+                img_arr = self.resizer.img_arr
+                frame_time = self.resizer.frame_time
             else:
-                img_arr, frame_time = await self.resizer.resize()
+                img_arr, frame_time = self.resizer.resize()
             t1 = int((time.time()-s1)*1000)
 
             # only continue if current cam frame time is greater than mobilnet last frame time
-            if img_arr is not None and frame_time > self.frame_time:
+            if img_arr is not None:
 
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
