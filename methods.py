@@ -21,7 +21,8 @@ def start_loop(tasks):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     for task in tasks:
-        loop.run_until_complete(task.start())
+        loop.create_task(task.start())
+    loop.run_forever()
 
 def start_thread(tasks):
     if tasks is None:

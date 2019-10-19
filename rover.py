@@ -12,7 +12,7 @@ from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
 from methods import min_abs, start_loop, start_thread, start_process
-from multiprocessing import Queue
+from queue import Queue
 from threading import Thread
 
 class Rover(object):
@@ -81,8 +81,7 @@ class Rover(object):
     async def run(self):
         # start services
         self.set_indicator('warmup')
-        start_thread([self.imu_sensor,self.sonar_sensor])
-        start_thread([self.vision_sensor])
+        start_thread([self.imu_sensor,self.sonar_sensor,self.vision_sensor])
         start_thread([self.mobilenet])
         self.remote.start()
         # wait and read sensors
