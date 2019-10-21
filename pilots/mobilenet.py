@@ -30,6 +30,7 @@ warnings.filterwarnings("ignore",category=DeprecationWarning)
 px = 300
 
 class Resizer(object):
+    ''' Image resizing, depending on interpolation setting can be expensive, so allow this step to be threaded, if necessary'''
     def __init__(self,mobilenet,**kwargs):
         self.mobilenet = mobilenet
         self.rover = mobilenet.rover
@@ -47,9 +48,8 @@ class Resizer(object):
             if self.w == 0:
                 (self.h,self.w,_) = image.shape
                 self.width = int((self.w-self.h)/2)
-                
             cropped_img = image[0:self.h,self.width:(self.w-self.width)]
-            resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
+            resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_NEAREST)
             self.img_arr = np.expand_dims(resized_img, axis=0)
             self.frame_time = time.time()
             return self.img_arr, self.frame_time
@@ -116,10 +116,7 @@ class MobileNet(BasePilot):
         mot_tracker = Sort()
         target = None
         avf_t = config.model.throttle_average_factor
-        min_height = float(config.mobilenet.min_height)
-        max_height = float(config.mobilenet.max_height)
-        target_height = float(config.mobilenet.target_height)
-
+        w = None
         while not self.stopped:
             # do not run when not "on"
             if not self.selected:
@@ -141,9 +138,14 @@ class MobileNet(BasePilot):
 
             # only continue if current cam frame time is greater than mobilnet last frame time
             if img_arr is not None:
-                w = self.resizer.w
-                h = self.resizer.h
-                width = self.resizer.width
+                if w is None:
+                    w = self.resizer.w
+                    h = self.resizer.h
+                    width = self.resizer.width
+                    min_height = h*float(config.mobilenet.min_height)
+                    max_height = h*float(config.mobilenet.max_height)
+                    target_height = h*float(config.mobilenet.target_height)
+
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
 
