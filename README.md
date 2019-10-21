@@ -35,14 +35,20 @@ You can start the service interactively using
 
 ``` sudo ./service.sh ```
 
-When it is not running as a service.
+When it is not running as a service.  When installed this will place the followme.service file in /etc/systemd/system
 
 ## Service Commands
 
-Use start.sh and stop.sh to start and stop as a systemd service
+Use start.sh and stop.sh to start and stop as a systemd service as shortcuts or commands like 
+
+``` sudo systemctl restart followme ```
 
 ## Logs
 
 You can tail syslog
 
 ``` tail -f /var/log/syslog ```
+
+## More Information
+
+For additional background on this design please read:  https://medium.com/@jleibund/the-odyssey-building-an-autonomous-follow-me-rover-b9a14f6bf107
