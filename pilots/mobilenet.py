@@ -35,14 +35,19 @@ class Resizer(object):
         self.rover = mobilenet.rover
         self.frame_time = 0
         self.img_arr = None
-        (self.w,self.h) = config.camera.resolution
-        self.width = int((self.w-self.h)/2)
+        self.h = 0
+        self.w = 0
+        self.width = 0
 
     def resize(self):
         image = self.rover.frame_buffer
         frame_time = self.rover.frame_time
         # only continue if current cam frame time is greater than mobilnet last frame time
         if image is not None and (self.frame_time==0 or self.frame_time < self.mobilenet.frame_time):
+            if self.w == 0:
+                (self.h,self.w,_) = image.shape
+                self.width = int((self.w-self.h)/2)
+                
             cropped_img = image[0:self.h,self.width:(self.w-self.width)]
             resized_img = cv2.resize(cropped_img, (px,px), interpolation = cv2.INTER_AREA)
             self.img_arr = np.expand_dims(resized_img, axis=0)
@@ -114,8 +119,6 @@ class MobileNet(BasePilot):
         min_height = float(config.mobilenet.min_height)
         max_height = float(config.mobilenet.max_height)
         target_height = float(config.mobilenet.target_height)
-        (w,h) = config.camera.resolution
-        width = int((w-h)/2)
 
         while not self.stopped:
             # do not run when not "on"
@@ -138,7 +141,9 @@ class MobileNet(BasePilot):
 
             # only continue if current cam frame time is greater than mobilnet last frame time
             if img_arr is not None:
-
+                w = self.resizer.w
+                h = self.resizer.h
+                width = self.resizer.width
                 # set the tensor using uint8 and invoke
                 self.model.set_tensor(self.input_details[0]['index'], img_arr.astype(np.uint8))
 
