@@ -11,23 +11,8 @@ from pilots import RC, MobileNet
 from ackermann import AckermannSteeringMixer
 from indicators import NAVIO2LED
 from web import WebRemote
-from methods import min_abs
+from methods import min_abs, start_loop, start_thread, start_process
 from threading import Thread
-
-def start_loop(loop,task):
-    if task is None:
-        return
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(task.start())
-
-def start_thread(task):
-    if task is None:
-        return
-    loop = asyncio.new_event_loop()
-    thread = Thread(target=start_loop,args=(loop,task))
-    thread.daemon = True
-    thread.start()
-    return thread
 
 class Rover(object):
     '''
@@ -82,6 +67,7 @@ class Rover(object):
         self.pilot_angle = None
         # holds mobilnet box when detected
         self.target = None
+        self.safety_stop = False
         self.sensor_reading = {}
         self.max_sonar_ft = volts_to_distance(config.sonar.max_mV)
         self.threshold_sonar_ft = config.sonar.threshold_sonar_ft
@@ -94,9 +80,7 @@ class Rover(object):
     async def run(self):
         # start services
         self.set_indicator('warmup')
-        start_thread(self.imu_sensor)
-        start_thread(self.sonar_sensor)
-        start_thread(self.vision_sensor)
+        start_thread(self.imu_sensor,self.sonar_sensor,self.vision_sensor)
         start_thread(self.mobilenet)
         self.remote.start()
         # wait and read sensors
@@ -140,10 +124,14 @@ class Rover(object):
 
         # complete frame decision, if no other inputs use raw vision sensor frame
         if self.vision_sensor:
-            self.frame_buffer = self.vision_sensor.read()
-            self.frame_time = time.time()
+            frame_buffer, frame_time = self.vision_sensor.read()
+            if frame_buffer is None:
+                await asyncio.sleep(0.001)
+                return
+            self.frame_buffer = frame_buffer
+            self.frame_time = frame_time
 
-        pilot_time = time.time()
+        auto_pilot_start_time = time.time()
 
         # run auto pilots
         for pilot_index in range(0,len(self.auto_pilots)):
@@ -152,11 +140,11 @@ class Rover(object):
                 pilot.selected = True
                 try:
                     # get computed angle, throttle and time
-                    pilot_angle, pilot_throttle, frame_time = await pilot.decide()
+                    pilot_angle, pilot_throttle, pilot_time = await pilot.decide()
                     self.target = pilot.target
 
                     # if auto pilot delay is greater than cutoff, then ignore during this step
-                    if frame_time > (pilot_time-float(config.car.auto_pilot_cutoff)):
+                    if pilot_time > (auto_pilot_start_time-float(config.car.auto_pilot_cutoff)):
                         # add in auto pilot angle
                         final_angle += pilot_angle
 
@@ -166,7 +154,7 @@ class Rover(object):
                         else:
                             final_throttle = min_abs(final_throttle, pilot_throttle)
                     else:
-                        logging.info("Autopilot cutoff! %.3f"%(frame_time-pilot_time-config.car.auto_pilot_cutoff))
+                        logging.info("Autopilot cutoff! %.3f"%(pilot_time-auto_pilot_start_time-config.car.auto_pilot_cutoff))
                 except Exception as e:
                     logging.error("Auto pilots could not decide: %s"%e)
                     pass
@@ -182,8 +170,11 @@ class Rover(object):
         # if within the safety distance apply full reverse stop (brake)
         if min_sonar < safety:
             final_throttle = 1.0
-            logging.info("Obstacle! safety STOP")
+            if not self.safety_stop:
+                logging.info("Obstacle! safety STOP")
+                self.safety_stop = True
         else:
+            self.safety_stop = False
             # otherwise check for sonar factoring of throttle value
             try:
                 # get max throttling distance
@@ -224,9 +215,7 @@ class Rover(object):
 
         # if recording, exec recorder
         if self.record and self.recorder is not None:
-            #self.recorder.record_frame()
-            # not currently in use
-            pass
+            self.recorder.record_frame()
 
         if self.recorder and self.recorder.is_recording:
             self.set_indicator('recording')

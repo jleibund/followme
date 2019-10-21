@@ -4,10 +4,35 @@ import os
 import subprocess
 import re
 import time
-
+import asyncio
+from threading import Thread
+from multiprocessing import Process, Queue
 import numpy as np
-
+import logging
 from config import config
+
+
+'''
+IOLOOP and Threads
+'''
+def start_loop(*args):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    for task in args:
+        logging.info('starting task %s'%task.__class__.__name__)
+        loop.create_task(task.start())
+    loop.run_forever()
+
+def start_thread(*args):
+    thread = Thread(target=start_loop,args=(args))
+    thread.daemon = True
+    thread.start()
+    return thread
+
+def start_process(*args):
+    process = Process(target=start_loop,args=(args))
+    process.start()
+    return process
 
 
 '''

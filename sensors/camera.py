@@ -27,7 +27,6 @@ class PiVideoStream(BaseSensor):
             vflip=config.camera.vflip,
             **kwargs):
         super(PiVideoStream, self).__init__(**kwargs)
-
         self.resolution = resolution
         self.frame = np.zeros(
                 shape=(
@@ -89,7 +88,6 @@ class PiVideoStream(BaseSensor):
                 self.frame_time = time.time()
                 await asyncio.sleep(0.001)
 
-
     def read(self):
         '''
         Returns the JPEG image buffer corresponding to
@@ -108,7 +106,7 @@ class PiVideoStream(BaseSensor):
 
             self.frame_buffer = image_buffer
             self.copied_time = time.time()
-        return self.frame_buffer
+        return self.frame_buffer,self.copied_time
 
     def stop(self):
         self.stopped = True
