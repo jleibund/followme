@@ -84,10 +84,7 @@ class Rover(object):
         start_thread(self.vision_sensor)
         start_thread(self.sonar_sensor)
         start_thread(self.mobilenet)
-        start_thread(self)
         self.remote.start()
-
-    async def start(self):
         # wait and read sensors
         await asyncio.sleep(0.1)
         self.sensor_reading = self.read_sensors()
