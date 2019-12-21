@@ -80,6 +80,7 @@ class SocketHandler(websocket.WebSocketHandler):
                     fontScale,
                     fontColor,
                     lineType)
+            image = cv2.resize(image,None,fx=0.5,fy=0.5)
             retval, encoded = cv2.imencode('.jpg', image)
             img64 = base64.b64encode(encoded).decode('ascii')
 
