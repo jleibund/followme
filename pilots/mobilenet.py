@@ -256,7 +256,7 @@ class MobileNet(BasePilot):
                 self.frame_time = stop_time
                 self.f_time = stop_time - start_time
                 self.fps = 1/self.f_time
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.003)
 
     def stop(self):
         self.stopped = True

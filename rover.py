@@ -80,7 +80,8 @@ class Rover(object):
     async def run(self):
         # start services
         self.set_indicator('warmup')
-        start_thread(self.imu_sensor,self.vision_sensor)
+        start_thread(self.imu_sensor)
+        start_thread(self.vision_sensor)
         start_thread(self.sonar_sensor)
         start_thread(self.mobilenet)
         self.remote.start()
@@ -98,7 +99,7 @@ class Rover(object):
             stop_time = time.time()
             self.f_time = stop_time - start_time
             self.fps = 1/self.f_time
-            await asyncio.sleep(max(0.002, 0.05 - self.f_time))
+            await asyncio.sleep(max(0.003, 0.05 - self.f_time))
             counter = counter + 1
 
 
